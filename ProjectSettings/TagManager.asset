@@ -8,6 +8,8 @@ TagManager:
   - changecamera right
   - Ground
   - Wall
+  - FinalCam
+  - Trap
   layers:
   - Default
   - TransparentFX
