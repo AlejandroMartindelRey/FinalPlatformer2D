@@ -8,6 +8,7 @@ using Slider = UnityEngine.UI.Slider;
 
 public class Player : MonoBehaviour, IDamagable
 {
+    private bool isAlive = true;
     [Header("HealthBar")]
     [SerializeField] Slider healthBar;
     [SerializeField] int health = 100;
@@ -69,9 +70,7 @@ public class Player : MonoBehaviour, IDamagable
 
         if (health <= 0)
         {
-            healthBar.value = 0;
-            anim.Play("Player_Death");
-            Destroy(playerScript);
+            StartCoroutine(Death());
         }
         
     }
@@ -90,34 +89,37 @@ public class Player : MonoBehaviour, IDamagable
     void Update()
     {
         healthBar.value = health;
-        
+        if (isAlive)
+        {
             hInput = Input.GetAxisRaw("Horizontal");
             
             wallJumpDirection = new Vector2(-hInput, 0);
                 
-                anim.SetFloat("xSpeed", Mathf.Abs(hInput));
-                anim.SetFloat("ySpeed", rb.linearVelocityY);
+            anim.SetFloat("xSpeed", Mathf.Abs(hInput));
+            anim.SetFloat("ySpeed", rb.linearVelocityY);
                 
-                TurnCheck();
+            TurnCheck();
         
-                if(Input.GetKeyDown(KeyCode.Q))
-                {
-                    anim.Play("Player_Attack");
-                    StartCoroutine(AttackCheck());
-                }
-                if (Input.GetKeyDown(KeyCode.Space) && isGrounded == true)
-                {
-                    rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
-                    isGrounded = false;
-                }
+            if(Input.GetKeyDown(KeyCode.Q))
+            {
+                anim.Play("Player_Attack");
+                StartCoroutine(AttackCheck());
+            }
+            if (Input.GetKeyDown(KeyCode.Space) && isGrounded == true)
+            {
+                rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+                isGrounded = false;
+            }
 
-                if (Input.GetKeyDown(KeyCode.Space) && isWallSliding)
-                {
-                    rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
-                    rb.AddForce(wallJumpDirection * wallJumpForce, ForceMode2D.Impulse);
-                }
+            if (Input.GetKeyDown(KeyCode.Space) && isWallSliding)
+            {
+                rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+                rb.AddForce(wallJumpDirection * wallJumpForce, ForceMode2D.Impulse);
+            }
                 
-                ProccessWallSlide();
+            ProccessWallSlide();
+        }
+           
                 
 
     }
@@ -163,13 +165,16 @@ public class Player : MonoBehaviour, IDamagable
 
     private void OnCollisionEnter2D(Collision2D other)
     {
-        if (other.gameObject.CompareTag("Enemy"))
+        if (isAlive)
         {
-            TakeDamage(other.gameObject, 25);
-        }
-        if (other.gameObject.CompareTag("Ground"))
-        {
-            isGrounded = true;
+            if (other.gameObject.CompareTag("Enemy"))
+            {
+                TakeDamage(other.gameObject, 25);
+            }
+            if (other.gameObject.CompareTag("Ground"))
+            {
+                isGrounded = true;
+            } 
         }
     }
 
@@ -177,43 +182,51 @@ public class Player : MonoBehaviour, IDamagable
     {
         gameObject.GetComponent<SpriteRenderer>().enabled = false;
         yield return new WaitForSeconds(1f);
+        SceneManager.LoadScene(0);
+    }
+    private IEnumerator Death()
+    {
+        hInput = 0;
+        healthBar.value = 0;
+        anim.Play("Player_Death");
+        isAlive = false;
+        yield return new WaitForSeconds(1f);
+        SceneManager.LoadScene(2);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.gameObject.CompareTag("End"))
+        if (isAlive)
         {
-            gameObject.GetComponent<SpriteRenderer>().enabled = false;
-            StartCoroutine(Ending());
-            
-
-        }
-        if (other.gameObject.CompareTag("Key"))
-        {
-            Destroy(other.gameObject);
-            Door.GetComponent<ExitDoor>().OpenDoor();
-        }
-        if (other.gameObject.CompareTag("Trap"))
-        {
-            healthBar.value = 0;
-            anim.Play("Player_Death");
-            Destroy(playerScript);
-        }
-        if (other.CompareTag("changecamera left"))
-        {
-            rightCam.SetActive(false);
-            leftCam.SetActive(true);
-        }
-        else if (other.CompareTag("changecamera right"))
-        {
-            rightCam.SetActive(true);
-            leftCam.SetActive(false);
-            finalCam.SetActive(false);
-        }
-        else if (other.CompareTag("FinalCam"))
-        {
-            rightCam.SetActive(false);
-            finalCam.SetActive(true);
+            if (other.gameObject.CompareTag("End"))
+            {
+                StartCoroutine(Ending());
+            }
+            if (other.gameObject.CompareTag("Key"))
+            {
+                Destroy(other.gameObject);
+                Door.GetComponent<ExitDoor>().OpenDoor();
+            }
+            if (other.gameObject.CompareTag("Trap"))
+            {
+                StartCoroutine(Death());
+            }
+            if (other.CompareTag("changecamera left"))
+            {
+                rightCam.SetActive(false);
+                leftCam.SetActive(true);
+            }
+            else if (other.CompareTag("changecamera right"))
+            {
+                rightCam.SetActive(true);
+                leftCam.SetActive(false);
+                finalCam.SetActive(false);
+            }
+            else if (other.CompareTag("FinalCam"))
+            {
+                rightCam.SetActive(false);
+                finalCam.SetActive(true);
+            }
         }
     }
 
